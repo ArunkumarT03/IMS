@@ -49,11 +49,12 @@ INSTALLED_APPS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('MYSQLDATABASE'),       # your DB name
-        'USER': os.getenv('MYSQLUSER'),            # your MySQL username
-        'PASSWORD': os.getenv('MYSQLPASSWORD'),# your MySQL password
-        'HOST': os.getenv('MYSQLHOST'),       # or server IP
-        'PORT': os.getenv('MYSQLPORT'),
+        'NAME': os.getenv('MYSQLDATABASE'),       # railway
+        'USER': os.getenv('MYSQLUSER'),           # root
+        'PASSWORD': os.getenv('MYSQLPASSWORD'),   # your password
+        'HOST': os.getenv('MYSQLHOST'),           # tramway.proxy.rlwy.net
+        'PORT': os.getenv('MYSQLPORT'),           # 30015
+        
     }
 }
 
