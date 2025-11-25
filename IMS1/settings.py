@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'admin_panel',
     'student',
     'corsheaders',
+    'Academics',
     'rest_framework',
 ]
 DATABASES = {

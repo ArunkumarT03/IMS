@@ -25,6 +25,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('check-db/', check_mysql_connection),
+    path('',include('users.urls')),
     path('',include('student.urls')),
-    path('',include('admin_panel.urls'))
+    path('',include('admin_panel.urls')),
+    path('',include('Academics.urls'))
 ]

@@ -1,5 +1,6 @@
 from django.db import models
 from users.models import *
+from Academics.models import *
 
 # Create your models here.
 class Student(models.Model):
@@ -10,6 +11,5 @@ class Student(models.Model):
     gender = models.CharField(max_length=100)
     phone = models.CharField(max_length=10)
     email = models.EmailField(max_length=200, unique=True, null=True, blank=True)
-    cls = models.CharField(max_length=100)
-    sec = models.CharField(max_length=100)
+    classroom=models.ForeignKey(ClassRoom,on_delete=models.SET_NULL,null=True,blank=True)
     status = models.CharField(max_length=100, choices=(('pending','Pending'),('approved','Approved')), default='pending')

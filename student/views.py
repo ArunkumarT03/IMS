@@ -33,8 +33,8 @@ class GlobalLoginView(APIView):
         if not user:
             return Response({"status": 0, "message": "Invalid email or password"}, status=400)
 
-        # ⬅️ THIS IS THE IMPORTANT PART
-        login(request, user)  # This updates last_login in DB
+       
+        login(request, user)  
 
         # generate tokens
         refresh = RefreshToken.for_user(user)
