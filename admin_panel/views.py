@@ -18,8 +18,8 @@ class ApproveStudentView(APIView):
 
     def post(self, request, pk):
 
-        # if not request.user.is_authenticated:
-        #     return Response({"status": 0, "message": "Authentication required"}, status=401)
+        if not request.user.is_authenticated:
+            return Response({"status": 0, "message": "Authentication required"}, status=401)
 
         if request.user.role != "admin":   
             return Response({"status": 0, "message": "Only admin can approve students"}, status=403)

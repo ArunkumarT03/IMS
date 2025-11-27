@@ -14,41 +14,45 @@ class StudentSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
-        try:
-            
-            request = self.context.get("request")
-            if request is None:
-                raise Exception("Request context missing")
+        request = self.context.get("request")
 
-            raw_password = request.data.get("password")
-            if not raw_password:
-                raise serializers.ValidationError({"password": "Password is required"})
+        if request is None:
+            raise serializers.ValidationError({"error": "Request context missing"})
 
-            # Extract cls/sec
-            cls = validated_data.pop("cls")
-            sec = validated_data.pop("sec")
+        # Get password
+        raw_password = request.data.get("password")
+        if not raw_password:
+            raise serializers.ValidationError({"password": "Password is required"})
 
-            # Find or create classroom
-            classroom, created = ClassRoom.objects.get_or_create(
-                 cls=cls.strip(),
-                 sec=sec.strip()
-            )
+        # Extract cls & sec
+        cls_value = validated_data.pop("cls").strip()
+        sec_value = validated_data.pop("sec").strip()
 
-            # Create user
-            email = validated_data.get("email")
-            user = User.objects.create_user(
-                email=email,
-                password=raw_password,
-                role="student"
-            )
+        # Create or get ClassRoom
+        classroom, _ = ClassRoom.objects.get_or_create(
+            cls=cls_value
+        )
 
-            # Create student
-            student = Student.objects.create(
-                user=user,
-                classroom=classroom,
-                **validated_data
-            )
+        # FIXED → correct field is cls, NOT classroom
+        section, _ = Section.objects.get_or_create(
+            cls=classroom,
+            sec=sec_value
+        )
 
-            return student
-        except Exception as e:
-             raise serializers.ValidationError({"error": str(e)})
+        # Create User
+        email = validated_data.get("email")
+        user = User.objects.create_user(
+            email=email,
+            password=raw_password,
+            role="student"
+        )
+
+        # Create Student record
+        student = Student.objects.create(
+            user=user,
+            section=section,
+            **validated_data
+        )
+
+        return student
+

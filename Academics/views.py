@@ -6,18 +6,37 @@ from rest_framework.response import Response
 from Academics.models import *
 from Academics.serializers import *
 
-class ClassroomView(APIView):
-    def post(self,request):
-        cls_data=ClassroomSerializer(data=request.data)
-        try:
-            if cls_data.is_valid():
-                cls_data.save()
-                return Response({'status':1,'message':'class and section created'},status=201)
-            return Response({'status':0,'error':cls_data.errors},status=400)
-        except Exception as e:
-            return Response({'error':str(e)},status=500)
+class CreateClassroomView(APIView):
+    def get(self, request):
+        classrooms = ClassRoom.objects.all()
+        serializer = ClassroomSerializer(classrooms, many=True)
+        
+        return Response({
+            "status": 1,
+            "message": "Classrooms fetched successfully",
+            "data": serializer.data
+        }, status=200)
+    
+    def post(self, request):
+        serializer = CreateClassroomSerializer(data=request.data)
+        if serializer.is_valid():
+            classroom = serializer.save()
+            return Response({
+                "status": 1,
+                "message": "Classroom created successfully",
+                "data": ClassroomSerializer(classroom).data
+            })
+        return Response({"status": 0, "errors": serializer.errors}, status=400)
         
 class SubjectView(APIView):
+    def get(self,request):
+        sub_data=Subject.objects.all()
+        sub_serializer=SubjectSerializer(sub_data,many=True)
+        return Response({
+            "status": 1,
+            "message": "subjects fetched successfully",
+            "data":sub_serializer.data
+        },status=200)
     def post(self,request):
         sub_data=SubjectSerializer(data=request.data)
         try:

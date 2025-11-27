@@ -11,5 +11,5 @@ class Student(models.Model):
     gender = models.CharField(max_length=100)
     phone = models.CharField(max_length=10)
     email = models.EmailField(max_length=200, unique=True, null=True, blank=True)
-    classroom=models.ForeignKey(ClassRoom,on_delete=models.SET_NULL,null=True,blank=True)
+    section = models.ForeignKey(Section, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=100, choices=(('pending','Pending'),('approved','Approved')), default='pending')

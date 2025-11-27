@@ -16,11 +16,17 @@ class Subject(models.Model):
         return f"{self.subject_name} ({self.subject_code})"
     
 class ClassRoom(models.Model):
-    cls = models.CharField(max_length=20)
-    sec = models.CharField(max_length=5)
-
-    class Meta:
-        unique_together = ('cls', 'sec')
-
+    cls=models.CharField(max_length=255)
+    
     def __str__(self):
-        return f"{self.cls}-{self.sec}"
+        return self.cls
+    
+class Section(models.Model):
+    cls=models.ForeignKey(ClassRoom,on_delete=models.CASCADE,related_name='sections')
+    sec=models.CharField(max_length=255)
+    
+    class Meta:
+        unique_together=('cls','sec')
+        
+    def __str__(self):
+        return f'{self.cls}-{self.sec}'
