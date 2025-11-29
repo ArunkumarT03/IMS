@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from users.models import *
-from student.models import *
+from users.models import*
+from student.models import*
 
 class StudentSerializer(serializers.ModelSerializer):
     # For POST
@@ -64,6 +64,7 @@ class StudentSerializer(serializers.ModelSerializer):
             **validated_data
         )
 
-        return student
+        # Create Student record linked to the user
+        student = Student.objects.create(user=user, section=section, **validated_data)
 
 

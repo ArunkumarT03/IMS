@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from Academics.models import *
 from Academics.serializers import *
+from rest_framework import status
 
 class CreateClassroomView(APIView):
     def get(self, request):
@@ -47,3 +48,83 @@ class SubjectView(APIView):
         except Exception as e:
             return Response({'error':str(e)},status=500)
         
+
+
+
+# AssignSubject POST view
+class AssignSubjectView(APIView):
+     def get(self, request):
+        assign_subjects = AssignSubject.objects.all()
+        data = []
+        for a in assign_subjects:
+            data.append({
+                "id": a.id,
+                "classroom": a.classroom.cls,
+                "section": a.section.sec,
+                "subject": a.subject.subject_name,
+                "teacher": a.teacher.name
+            })
+        return Response({
+            "status": 1,
+            "message": "Assigned subjects fetched successfully",
+            "data": data
+        }, status=status.HTTP_200_OK)
+     
+     def post(self, request):
+      serializer = CreateAssignSubjectSerializer(data=request.data)
+      if serializer.is_valid():
+        assigned = serializer.save()
+
+        response = []
+        for a in assigned:
+            response.append({
+                "id": a.id,
+                "classroom": a.classroom.cls,
+                "section": a.section.sec,
+                "subject": a.subject.subject_name,
+                "teacher": a.teacher.name
+            })
+
+        return Response({
+            "status": 1,
+            "message": "Assignments saved successfully!",
+            "data": response
+        }, status=status.HTTP_201_CREATED)
+
+      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+ 
+
+        
+# AssignClassTeacher POST view
+class AssignClassTeacherView(APIView):
+    def get(self, request):
+        assign_teachers = AssignClassTeacher.objects.all()
+        data = []
+        for a in assign_teachers:
+            data.append({
+                "id": a.id,
+                "classroom": a.classroom.cls,
+                "section": a.section.sec,
+                "teacher": a.teacher.name,
+                
+            })
+        return Response({
+            "status": 1,
+            "message": "Assigned class teachers fetched successfully",
+            "data": data
+        }, status=status.HTTP_200_OK)
+    def post(self, request):
+        serializer = AssignMultipleTeachersSerializer(data=request.data)
+
+        if serializer.is_valid():
+            result = serializer.save()
+            return Response({
+                "status": 1,
+                "message": "Teachers assigned successfully",
+                "data": result
+            }, status=status.HTTP_201_CREATED)
+
+        return Response({
+            "status": 0,
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
