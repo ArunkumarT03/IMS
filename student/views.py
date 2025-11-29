@@ -7,6 +7,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.timezone import localtime
 # Create your views here.
 class StudentSignupView(APIView):
+    def get(self,request):
+        try:
+            st_datas=Student.objects.all()
+            serializer=StudentSerializer(st_datas,many=True)
+            return Response({'message':serializer.data},status=200)
+        except Exception as e:
+            return Response({'error':str(e)},status=500)
     def post(self, request):
         try:
             
@@ -23,6 +30,40 @@ class StudentSignupView(APIView):
         except Exception as e:
             return Response({'error':str(e)},status=500)
     
+class StudentsView(APIView):
+
+    # Get single student object (not Response)
+    def get_object(self, id):
+        try:
+            return Student.objects.get(pk=id)
+        except Student.DoesNotExist:
+            return None
+
+    # -------- GET SINGLE STUDENT --------
+    def get(self, request, id):
+        student = self.get_object(id)
+        if not student:
+            return Response({"error": "Student not found"}, status=404)
+
+        serializer = StudentSerializer(student)
+        return Response(serializer.data, status=200)
+
+    # -------- UPDATE STUDENT (PUT) --------
+    def put(self, request, id):
+        student = self.get_object(id)
+        if not student:
+            return Response({"error": "Student not found"}, status=404)
+
+        serializer = StudentSerializer(student, data=request.data)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+
+        return Response({'error': serializer.errors}, status=400)
+
+
+        
     
 class GlobalLoginView(APIView):
     def post(self, request):
