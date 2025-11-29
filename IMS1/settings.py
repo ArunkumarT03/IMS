@@ -30,7 +30,7 @@ ALLOWED_HOSTS = ['*']
 import os
 from dotenv import load_dotenv
 load_dotenv()
-SECRET_KEY=os.getenv('SECRET_KEY')
+# SECRET_KEY=os.getenv('SECRET_KEY')
 # Application definition
 
 INSTALLED_APPS = [
@@ -46,7 +46,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'Academics',
     'rest_framework',
+    'instructor',
 ]
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',

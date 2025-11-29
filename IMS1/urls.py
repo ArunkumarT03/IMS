@@ -17,9 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from .settings import check_mysql_connection
-from rest_framework_simplejwt.views import (
-    TokenRefreshView,
-)
+from rest_framework_simplejwt.views import  TokenRefreshView
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,5 +27,7 @@ urlpatterns = [
     path('',include('users.urls')),
     path('',include('student.urls')),
     path('',include('admin_panel.urls')),
-    path('',include('Academics.urls'))
+    path('',include('Academics.urls')),
+    path('',include('instructor.urls')),
+    
 ]
