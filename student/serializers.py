@@ -43,7 +43,7 @@ class StudentSerializer(serializers.ModelSerializer):
         classroom, _ = ClassRoom.objects.get_or_create(cls=cls_value)
 
         # Get/Create Section
-        section, _ = Section.objects.get_or_create(
+        section, _ = Section.objects.get_or_create( 
             cls=classroom,
             sec=sec_value
         )
