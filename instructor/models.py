@@ -5,6 +5,7 @@ from Academics.models import Subject
 class Instructor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="instructor_profile",null=True)
     name = models.CharField(max_length=100)
+    email = models.EmailField(max_length=100, unique=True,null=True,blank=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
     qualification = models.CharField(max_length=150)
     experience = models.CharField(max_length=50)
