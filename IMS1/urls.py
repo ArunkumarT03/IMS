@@ -29,5 +29,7 @@ urlpatterns = [
     path('',include('admin_panel.urls')),
     path('',include('Academics.urls')),
     path('',include('instructor.urls')),
+    path('',include('Online_Exam.urls')),
+    
     
 ]

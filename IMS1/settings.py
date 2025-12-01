@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'Academics',
     'rest_framework',
     'instructor',
+    'Online_Exam',
 ]
 
 DATABASES = {
