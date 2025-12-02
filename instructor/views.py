@@ -8,8 +8,26 @@ from django.utils.timezone import localtime
 from rest_framework_simplejwt.tokens import RefreshToken
 
 class InstructorCreateView(APIView):
-    def get(self, request):
+
+    def get(self, request, id=None):
         try:
+            if id:  # If an ID is provided, return a single instructor
+                try:
+                    instructor = Instructor.objects.get(id=id)
+                except Instructor.DoesNotExist:
+                    return Response({
+                        "status": 0,
+                        "message": "Instructor not found"
+                    }, status=404)
+
+                serializer = InstructorSerializer(instructor)
+                return Response({
+                    "status": 1,
+                    "message": "Instructor retrieved successfully",
+                    "data": serializer.data
+                }, status=200)
+
+            # If no ID, return all instructors
             instructors = Instructor.objects.all()
             serializer = InstructorSerializer(instructors, many=True)
             return Response({
@@ -17,6 +35,7 @@ class InstructorCreateView(APIView):
                 "message": "Instructors retrieved successfully",
                 "data": serializer.data
             }, status=200)
+
         except Exception as e:
             return Response({"status": 0, "error": str(e)}, status=500)
 
@@ -34,18 +53,10 @@ class InstructorCreateView(APIView):
         except Exception as e:
             return Response({"status": 0, "error": str(e)}, status=500)
 
-    def put(self, request):
+    def put(self, request, id):
         try:
-            instructor_id = request.data.get("id")
-
-            if not instructor_id:
-                return Response({
-                    "status": 0,
-                    "message": "Instructor ID is required for update"
-                }, status=400)
-
             try:
-                instructor = Instructor.objects.get(id=instructor_id)
+                instructor = Instructor.objects.get(id=id)
             except Instructor.DoesNotExist:
                 return Response({
                     "status": 0,
@@ -66,6 +77,9 @@ class InstructorCreateView(APIView):
 
         except Exception as e:
             return Response({"status": 0, "error": str(e)}, status=500)
+
+
+   
         
 class GlobalLoginView(APIView):
     def post(self, request):
