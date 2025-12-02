@@ -3,7 +3,6 @@ from admin_panel.models import *
 from users.serializers import *
 
 class AdminSignupSerializer(serializers.ModelSerializer):
-    # these fields will come in request
     email = serializers.EmailField(write_only=True)
     password = serializers.CharField(write_only=True)
 
@@ -15,17 +14,17 @@ class AdminSignupSerializer(serializers.ModelSerializer):
         email = validated_data.pop("email")
         raw_password = validated_data.pop("password")
 
-        # 1️⃣ Create User
+        # Create User
         user = User.objects.create_user(
             email=email,
             password=raw_password,
-            role="admin"    # auto-set role
+            role="admin"
         )
 
-        # 2️⃣ Create Admin Profile
+        # FIX: email must be passed
         admin_profile = Admin_panel.objects.create(
             user=user,
-            **validated_data
+            email=email      # 🔥 pass email here
         )
 
         return admin_profile
