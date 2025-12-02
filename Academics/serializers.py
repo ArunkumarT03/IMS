@@ -42,64 +42,131 @@ class SubjectSerializer(serializers.ModelSerializer):
 
 class SubjectTeacherPairSerializer(serializers.Serializer):
     subject = serializers.CharField()
-    teacher = serializers.CharField()
+    teacher = serializers.ListField(child=serializers.CharField(), required=True)
+
+class AssignSubjectListSerializer(serializers.ModelSerializer):
+    classroom = serializers.PrimaryKeyRelatedField(read_only=True)
+    section = serializers.PrimaryKeyRelatedField(read_only=True)
+    subject = serializers.CharField(source="subject.subject_name", read_only=True)
+    teacher = serializers.SerializerMethodField()  
+
+    class Meta:
+        model = AssignSubject
+        fields = ['id', 'classroom', 'section', 'subject', 'teacher']
+
+    def get_teacher(self, obj):
+        # return list of teacher names
+         return [t.name for t in obj.teacher.all()]
+
 
 
 class CreateAssignSubjectSerializer(serializers.Serializer):
-    classroom = serializers.CharField()
-    section = serializers.CharField()
+    classroom = serializers.PrimaryKeyRelatedField(queryset=ClassRoom.objects.all(), required=False)
+    section = serializers.PrimaryKeyRelatedField(queryset=Section.objects.all(), required=False)
     assignments = SubjectTeacherPairSerializer(many=True)
+    class Meta:
+        model = AssignSubject
+        fields = ['id', 'classroom', 'section', 'subject', 'teacher']
 
     def create(self, validated_data):
-        classroom_name = validated_data['classroom']
-        section_name = validated_data['section']
+        classroom = validated_data['classroom']
+        section = validated_data['section']
         assignment_list = validated_data['assignments']
-
-        # Validate classroom
-        try:
-            classroom = ClassRoom.objects.get(cls=classroom_name)
-        except ClassRoom.DoesNotExist:
-            raise serializers.ValidationError({"classroom": f"ClassRoom '{classroom_name}' does not exist"})
-
-        # Validate section
-        try:
-            section = Section.objects.get(sec=section_name)
-        except Section.DoesNotExist:
-            raise serializers.ValidationError({"section": f"Section '{section_name}' does not exist"})
 
         created_items = []
 
         for item in assignment_list:
-            subject_name = item["subject"]
-            teacher_name = item["teacher"]
+            subject_name = item["subject"].strip()
+            teacher_names = item["teacher"]  # list of teacher names
 
-            # validate subject
+            # Validate subject
             try:
                 subject = Subject.objects.get(subject_name=subject_name)
             except Subject.DoesNotExist:
-                raise serializers.ValidationError({"subject": f"Subject '{subject_name}' does not exist"})
+                raise serializers.ValidationError(
+                    {"subject": f"Subject '{subject_name}' does not exist"}
+                )
 
-            # validate teacher
-            try:
-                teacher = Instructor.objects.get(name=teacher_name)
-            except Instructor.DoesNotExist:
-                raise serializers.ValidationError({"teacher": f"Teacher '{teacher_name}' does not exist"})
+            # Validate teachers
+            teachers_qs = Instructor.objects.filter(name__in=teacher_names)
+            if teachers_qs.count() != len(teacher_names):
+                existing = set(t.name for t in teachers_qs)
+                missing = set(teacher_names) - existing
+                raise serializers.ValidationError(
+                    {"teacher": f"Teachers '{', '.join(missing)}' do not exist"}
+                )
 
-            # create or update assignment
+            # Create or update assignment
             assign_sub, created = AssignSubject.objects.get_or_create(
                 classroom=classroom,
                 section=section,
                 subject=subject,
-                defaults={'teacher': teacher}
             )
 
-            if not created:
-                assign_sub.teacher = teacher
-                assign_sub.save()
+            assign_sub.teacher.set(teachers_qs)
+            assign_sub.save()
 
             created_items.append(assign_sub)
 
         return created_items
+   
+    def update(self, instance, validated_data):
+  
+
+    # Extract new classroom/section
+        instance.classroom = validated_data.get("classroom", instance.classroom)
+        instance.section = validated_data.get("section", instance.section)
+
+    # Only one assignment allowed in update
+        assignment = validated_data["assignments"][0]
+        subject_name = assignment["subject"].strip()
+        teacher_names = assignment["teacher"]
+
+    # Validate subject
+        try:
+            subject = Subject.objects.get(subject_name=subject_name)
+        except Subject.DoesNotExist:
+            raise serializers.ValidationError(
+                {"subject": f"Subject '{subject_name}' does not exist"}
+        )
+
+    # Check if another AssignSubject exists with same classroom/section/subject
+        existing = AssignSubject.objects.filter(
+            classroom=instance.classroom,
+            section=instance.section,
+            subject=subject
+        ).exclude(pk=instance.pk).first()
+
+        if existing:
+            raise serializers.ValidationError({
+                "error": "Another assignment already exists with this classroom, section, and subject."
+        })
+
+    # Validate teachers
+        teachers = Instructor.objects.filter(name__in=teacher_names)
+        if teachers.count() != len(teacher_names):
+            missing = set(teacher_names) - set(t.name for t in teachers)
+            raise serializers.ValidationError(
+                {"teacher": f"Teachers not found: {', '.join(missing)}"}
+        )
+
+    # Update instance
+        instance.classroom = instance.classroom
+        instance.section = instance.section
+        instance.subject = subject
+        instance.save()
+
+    # Update teachers
+        instance.teacher.set(teachers)
+
+        return instance
+
+    def save(self, **kwargs):
+        if self.instance:
+            return self.update(self.instance, self.validated_data)
+        return self.create(self.validated_data)
+
+
 
 class TeacherAssignmentSerializer(serializers.Serializer):
     teacher = serializers.CharField()
@@ -109,27 +176,25 @@ class TeacherAssignmentSerializer(serializers.Serializer):
         ('hod', 'HOD')
     ])
 
+class AssignClassTeacherListSerializer(serializers.ModelSerializer):
+    classroom = serializers.PrimaryKeyRelatedField(read_only=True)
+    section = serializers.PrimaryKeyRelatedField(read_only=True)
+    teacher = serializers.CharField(source='teacher.name', read_only=True)
+
+    class Meta:
+        model = AssignClassTeacher
+        fields = ['id', 'classroom', 'section', 'teacher', 'role']
+
+
 class AssignMultipleTeachersSerializer(serializers.Serializer):
-    classroom = serializers.CharField()
-    section = serializers.CharField()
+    classroom = serializers.PrimaryKeyRelatedField(queryset=ClassRoom.objects.all())
+    section = serializers.PrimaryKeyRelatedField(queryset=Section.objects.all())
     assignments = TeacherAssignmentSerializer(many=True)
 
     def create(self, validated_data):
-        classroom_name = validated_data["classroom"]
-        section_name = validated_data["section"]
+        classroom = validated_data["classroom"]
+        section = validated_data["section"]
         assignments = validated_data["assignments"]
-
-        # Classroom
-        try:
-            classroom = ClassRoom.objects.get(cls=classroom_name)
-        except ClassRoom.DoesNotExist:
-            raise serializers.ValidationError({"classroom": f"ClassRoom '{classroom_name}' does not exist"})
-
-        # Section
-        try:
-            section = Section.objects.get(sec=section_name)
-        except Section.DoesNotExist:
-            raise serializers.ValidationError({"section": f"Section '{section_name}' does not exist"})
 
         saved_assignments = []
 
@@ -161,4 +226,46 @@ class AssignMultipleTeachersSerializer(serializers.Serializer):
                 "status": "created" if created else "updated"
             })
 
-        return {"assignments": saved_assignments}
+        return {
+            "classroom": classroom.id,
+            "section": section.id,
+            "assignments": saved_assignments
+        }
+   
+    def update(self, instance, validated_data):
+        classroom = validated_data.get('classroom', instance.classroom)
+        section = validated_data.get('section', instance.section)
+        assignments = validated_data.get('assignments', [])
+
+        if not assignments:
+            raise serializers.ValidationError({"assignments": "No assignments provided."})
+
+        updated_instances = []
+
+        for item in assignments:
+            teacher_name = item.get('teacher')
+            role = item.get('role')
+
+            try:
+                teacher = Instructor.objects.get(name__iexact=teacher_name)
+            except Instructor.DoesNotExist:
+                raise serializers.ValidationError({"teacher": f"Instructor '{teacher_name}' does not exist"})
+
+        obj, created = AssignClassTeacher.objects.update_or_create(
+            classroom=classroom,
+            section=section,
+            teacher=teacher,
+            defaults={"role": role}
+        )
+
+        updated_instances.append({
+            "teacher": teacher_name,
+            "role": role,
+            "status": "created" if created else "updated"
+        })
+
+        return {
+            "classroom": classroom.id,
+            "section": section.id,
+            "assignments": updated_instances
+    }

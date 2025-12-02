@@ -1,5 +1,8 @@
 from django.db import models
 
+
+
+
 # Create your models here.
 class Subject(models.Model):
     SUBJECT_TYPES = (
@@ -35,8 +38,7 @@ class AssignSubject(models.Model):
     classroom = models.ForeignKey(ClassRoom, on_delete=models.CASCADE)
     section = models.ForeignKey(Section, on_delete=models.CASCADE)
     subject= models.ForeignKey(Subject, on_delete=models.CASCADE)
-    teacher = models.ForeignKey('instructor.Instructor', on_delete=models.CASCADE)
-
+    teacher = models.ManyToManyField('instructor.Instructor', related_name="academics_assignments")  # <-- string reference
     class Meta:
         unique_together = ('classroom', 'section', 'subject')
 
