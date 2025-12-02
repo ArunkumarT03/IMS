@@ -53,24 +53,18 @@ class SubjectView(APIView):
 
 # AssignSubject POST view
 class AssignSubjectView(APIView):
-     def get(self, request):
-        assign_subjects = AssignSubject.objects.all()
-        data = []
-        for a in assign_subjects:
-            data.append({
-                "id": a.id,
-                "classroom": a.classroom.cls,
-                "section": a.section.sec,
-                "subject": a.subject.subject_name,
-                "teacher": a.teacher.name
-            })
+    
+    def get(self, request):
+        assignments = AssignSubject.objects.all()
+        serializer = AssignSubjectListSerializer(assignments, many=True)
         return Response({
             "status": 1,
             "message": "Assigned subjects fetched successfully",
-            "data": data
-        }, status=status.HTTP_200_OK)
+            "data": serializer.data
+        })
+
      
-     def post(self, request):
+    def post(self, request):
       serializer = CreateAssignSubjectSerializer(data=request.data)
       if serializer.is_valid():
         assigned = serializer.save()
@@ -79,10 +73,10 @@ class AssignSubjectView(APIView):
         for a in assigned:
             response.append({
                 "id": a.id,
-                "classroom": a.classroom.cls,
-                "section": a.section.sec,
+                "classroom": a.classroom.id,
+                "section": a.section.id,
                 "subject": a.subject.subject_name,
-                "teacher": a.teacher.name
+                "teacher":  [t.name for t in a.teacher.all()]
             })
 
         return Response({
@@ -92,27 +86,75 @@ class AssignSubjectView(APIView):
         }, status=status.HTTP_201_CREATED)
 
       return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def put(self, request, pk):
+        
+        try:
+            try:
+                instance = AssignSubject.objects.get(pk=pk)
+            except AssignSubject.DoesNotExist:
+                return Response({"status": 0, "message": "Assignment not found"}, status=404)
+
+            serializer = CreateAssignSubjectSerializer(instance, data=request.data)
+
+            if serializer.is_valid():
+                updated = serializer.save()
+
+                return Response({
+                    "status": 1,
+                    "message": "Assignment updated successfully!",
+                    "data": {
+                        "id": updated.id,
+                        "classroom": updated.classroom.id,
+                        "section": updated.section.id,
+                        "subject": updated.subject.subject_name,
+                        "teacher": [t.name for t in updated.teacher.all()]
+                }
+            })
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({"status": 0, "error": str(e)}, status=500)
  
+class SubjectTeachersAPIView(APIView):
+    def get(self, request, pk=None):
+        if pk:  # If ID is provided, fetch one subject
+            try:
+                subjects = [Subject.objects.get(pk=pk)]
+            except Subject.DoesNotExist:
+                return Response({"error": "Subject not found"}, status=404)
+        else:  # No ID, fetch all subjects
+            subjects = Subject.objects.all()
+
+        data = []
+        for s in subjects:
+            assignments = AssignSubject.objects.filter(subject=s)
+            teacher_names = set(t.name for assign in assignments for t in assign.teacher.all())
+            data.append({
+                "id": s.id,
+                "subject": s.subject_name,
+                "teachers": list(teacher_names)
+            })
+
+        # If single subject, return dict instead of list
+        if pk and data:
+            return Response(data[0])
+        return Response(data)
 
         
 # AssignClassTeacher POST view
 class AssignClassTeacherView(APIView):
+    
     def get(self, request):
-        assign_teachers = AssignClassTeacher.objects.all()
-        data = []
-        for a in assign_teachers:
-            data.append({
-                "id": a.id,
-                "classroom": a.classroom.cls,
-                "section": a.section.sec,
-                "teacher": a.teacher.name,
-                
-            })
+        queryset = AssignClassTeacher.objects.all()
+        serializer = AssignClassTeacherListSerializer(queryset, many=True)
+
         return Response({
             "status": 1,
             "message": "Assigned class teachers fetched successfully",
-            "data": data
-        }, status=status.HTTP_200_OK)
+            "data": serializer.data
+        })
+
     def post(self, request):
         serializer = AssignMultipleTeachersSerializer(data=request.data)
 
@@ -128,3 +170,21 @@ class AssignClassTeacherView(APIView):
             "status": 0,
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+    def put(self, request, pk):
+        """
+        Update a single AssignClassTeacher instance by ID
+        """
+        try:
+            instance = AssignClassTeacher.objects.get(pk=pk)
+        except AssignClassTeacher.DoesNotExist:
+            return Response({"status": 0, "message": "Assignment not found"}, status=404)
+
+        serializer = AssignMultipleTeachersSerializer(instance, data=request.data)
+        if serializer.is_valid():
+            updated = serializer.save()
+            return Response({
+                "status": 1,
+                "message": "Class teacher assignment updated successfully",
+                "data": updated
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
