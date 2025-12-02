@@ -82,3 +82,37 @@ class InstructorSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+    
+class SubjectMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subject
+        fields = ['id', 'subject_name', 'subject_code']
+
+
+class InstructorSubjectsSerializer(serializers.ModelSerializer):
+    subjects = SubjectMiniSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Instructor
+        fields = ['id', 'name', 'subjects']
+
+class InstructorSubjectsUpdateSerializer(serializers.Serializer):
+    subject_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=False
+    )
+
+    def update(self, instance, validated_data):
+        subject_ids = validated_data.get('subject_ids', [])
+        subjects = Subject.objects.filter(id__in=subject_ids)
+
+        if subjects.count() != len(subject_ids):
+            existing_ids = set(subjects.values_list('id', flat=True))
+            missing = set(subject_ids) - existing_ids
+            raise serializers.ValidationError(
+                {"subject_ids": f"Subjects not found: {', '.join(map(str, missing))}"}
+            )
+
+        instance.subjects.set(subjects)
+        instance.save()
+        return instance
