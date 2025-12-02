@@ -118,25 +118,33 @@ class AssignSubjectView(APIView):
  
 class SubjectTeachersAPIView(APIView):
     def get(self, request, pk=None):
-        if pk:  # If ID is provided, fetch one subject
+        if pk:
             try:
                 subjects = [Subject.objects.get(pk=pk)]
             except Subject.DoesNotExist:
                 return Response({"error": "Subject not found"}, status=404)
-        else:  # No ID, fetch all subjects
+        else:
             subjects = Subject.objects.all()
 
         data = []
         for s in subjects:
             assignments = AssignSubject.objects.filter(subject=s)
-            teacher_names = set(t.name for assign in assignments for t in assign.teacher.all())
+
+            teacher_map = {}   # ← store unique teachers by ID
+
+            for assign in assignments:
+                for t in assign.teacher.all():
+                    teacher_map[t.id] = {
+                        "id": t.id,
+                        "name": t.name
+                    }
+
             data.append({
                 "id": s.id,
                 "subject": s.subject_name,
-                "teachers": list(teacher_names)
+                "teachers": list(teacher_map.values())  # ← unique list
             })
 
-        # If single subject, return dict instead of list
         if pk and data:
             return Response(data[0])
         return Response(data)
@@ -187,4 +195,4 @@ class AssignClassTeacherView(APIView):
                 "message": "Class teacher assignment updated successfully",
                 "data": updated
             })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
