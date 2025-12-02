@@ -2,10 +2,11 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Instructor
-from .serializers import InstructorSerializer
+from .serializers import InstructorSerializer,InstructorSubjectsSerializer,InstructorSubjectsUpdateSerializer
 from django.contrib.auth import authenticate, login
 from django.utils.timezone import localtime
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import status
 
 class InstructorCreateView(APIView):
 
@@ -132,3 +133,36 @@ class GlobalLoginView(APIView):
             "refresh_token": str(refresh),
             "user": user_data
         }, status=200)
+    
+class InstructorSubjectsAPIView(APIView):
+    def get(self, request, instructor_id=None):
+        try:
+            if instructor_id:
+                instructor = Instructor.objects.prefetch_related('subjects').get(pk=instructor_id)
+                serializer = InstructorSubjectsSerializer(instructor)
+                return Response(serializer.data)
+            else:
+                instructors = Instructor.objects.prefetch_related('subjects').all()
+                serializer = InstructorSubjectsSerializer(instructors, many=True)
+                return Response(serializer.data)
+        except Instructor.DoesNotExist:
+            return Response({"error": "Instructor not found"}, status=404)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+    def put(self, request, instructor_id):
+        try:
+            instructor = Instructor.objects.get(pk=instructor_id)
+        except Instructor.DoesNotExist:
+            return Response({"error": "Instructor not found"}, status=404)
+
+        serializer = InstructorSubjectsUpdateSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.update(instructor, serializer.validated_data)
+            result = InstructorSubjectsSerializer(instructor)
+            return Response({
+                "status": 1,
+                "message": "Instructor subjects updated successfully",
+                "data": result.data
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

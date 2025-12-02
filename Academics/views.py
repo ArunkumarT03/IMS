@@ -195,4 +195,4 @@ class AssignClassTeacherView(APIView):
                 "message": "Class teacher assignment updated successfully",
                 "data": updated
             })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
