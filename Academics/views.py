@@ -8,7 +8,25 @@ from Academics.serializers import *
 from rest_framework import status
 
 class CreateClassroomView(APIView):
-    def get(self, request):
+    def get(self, request, pk=None):
+        if pk:
+            # Get single classroom
+            try:
+                classroom = ClassRoom.objects.get(pk=pk)
+            except ClassRoom.DoesNotExist:
+                return Response({
+                    "status": 0,
+                    "message": "Classroom not found"
+                }, status=404)
+
+            serializer = ClassroomSerializer(classroom)
+            return Response({
+                "status": 1,
+                "message": "Classroom fetched successfully",
+                "data": serializer.data
+            }, status=200)
+
+        # Get all classrooms
         classrooms = ClassRoom.objects.all()
         serializer = ClassroomSerializer(classrooms, many=True)
         
@@ -17,7 +35,10 @@ class CreateClassroomView(APIView):
             "message": "Classrooms fetched successfully",
             "data": serializer.data
         }, status=200)
+
+
     
+
     def post(self, request):
         serializer = CreateClassroomSerializer(data=request.data)
         if serializer.is_valid():
@@ -28,16 +49,57 @@ class CreateClassroomView(APIView):
                 "data": ClassroomSerializer(classroom).data
             })
         return Response({"status": 0, "errors": serializer.errors}, status=400)
-        
+    def put(self, request, pk):
+        try:
+            try:
+                classroom = ClassRoom.objects.get(pk=pk)
+            except ClassRoom.DoesNotExist:
+                return Response({
+                    "status": 0,
+                    "message": "Classroom not found"
+                }, status=404)
+
+            serializer = CreateClassroomSerializer(classroom, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    "status": 1,
+                    "message": "Classroom updated successfully",
+                    "data": ClassroomSerializer(classroom).data
+            })
+
+            return Response({"status": 0, "errors": serializer.errors}, status=400)
+        except Exception as e:
+            return Response({"status": 0, "error": str(e)}, status=500)
+ 
+  
+
 class SubjectView(APIView):
-    def get(self,request):
-        sub_data=Subject.objects.all()
-        sub_serializer=SubjectSerializer(sub_data,many=True)
+    def get(self, request, pk=None):
+        if pk:  # Fetch single subject
+            try:
+                subject = Subject.objects.get(pk=pk)
+                serializer = SubjectSerializer(subject)
+                return Response({
+                    "status": 1,
+                    "message": "Subject fetched successfully",
+                    "data": serializer.data
+                }, status=200)
+            except Subject.DoesNotExist:
+                return Response({
+                    "status": 0,
+                    "message": "Subject not found"
+                }, status=404)
+
+        # Fetch all subjects
+        subjects = Subject.objects.all()
+        serializer = SubjectSerializer(subjects, many=True)
         return Response({
             "status": 1,
-            "message": "subjects fetched successfully",
-            "data":sub_serializer.data
-        },status=200)
+            "message": "Subjects fetched successfully",
+            "data": serializer.data
+        }, status=200)
+
     def post(self,request):
         sub_data=SubjectSerializer(data=request.data)
         try:
@@ -48,6 +110,25 @@ class SubjectView(APIView):
         except Exception as e:
             return Response({'error':str(e)},status=500)
         
+    def put(self, request, pk):
+        try:
+            subject = Subject.objects.get(pk=pk)
+        except Subject.DoesNotExist:
+            return Response({
+                "status": 0,
+                "message": "Subject not found"
+            }, status=404)
+
+        serializer = SubjectSerializer(subject, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": 1,
+                "message": "Subject updated successfully",
+                "data": serializer.data
+            }, status=200)
+
+        return Response({"status": 0, "errors": serializer.errors}, status=400)    
 
 
 

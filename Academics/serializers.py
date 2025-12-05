@@ -13,7 +13,7 @@ class ClassroomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ClassRoom
-        fields = ['cls', 'sections']
+        fields = ['id','cls', 'sections']
 
 # Serializer for input (POST request)
 class CreateClassroomSerializer(serializers.Serializer):
@@ -30,6 +30,15 @@ class CreateClassroomSerializer(serializers.Serializer):
             Section.objects.get_or_create(cls=classroom, sec=s)
         
         return classroom
+    def update(self, instance, validated_data):
+        instance.cls = validated_data.get("cls", instance.cls)
+        instance.save()
+        new_sections = validated_data.get("sec", [])
+        Section.objects.filter(cls=instance).delete()
+        for s in new_sections:
+            Section.objects.get_or_create(cls=instance, sec=s)
+
+        return instance
 
 class SubjectSerializer(serializers.ModelSerializer):
     # Ensure 'type' only accepts valid choices
