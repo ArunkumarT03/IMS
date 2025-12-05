@@ -73,10 +73,6 @@ class CreateAssignSubjectSerializer(serializers.Serializer):
     classroom = serializers.PrimaryKeyRelatedField(queryset=ClassRoom.objects.all(), required=False)
     section = serializers.PrimaryKeyRelatedField(queryset=Section.objects.all(), required=False)
     assignments = SubjectTeacherPairSerializer(many=True)
-    class Meta:
-        model = AssignSubject
-        fields = ['id', 'classroom', 'section', 'subject', 'teacher']
-
     def create(self, validated_data):
         classroom = validated_data['classroom']
         section = validated_data['section']
@@ -106,7 +102,7 @@ class CreateAssignSubjectSerializer(serializers.Serializer):
                 )
 
             # Create or update assignment
-            assign_sub, created = AssignSubject.objects.get_or_create(
+            assign_sub = AssignSubject.objects.create(
                 classroom=classroom,
                 section=section,
                 subject=subject,
