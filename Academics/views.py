@@ -104,8 +104,8 @@ class SubjectView(APIView):
         sub_data=SubjectSerializer(data=request.data)
         try:
             if sub_data.is_valid():
-                sub_data.save()
-                return Response({'status':1,'message':'subject created'})
+                subject=sub_data.save()
+                return Response({'status':1,'message':'subject created', 'data': SubjectSerializer(subject).data},status=201)
             return Response({'status':0,'error':sub_data.errors},status=400)
         except Exception as e:
             return Response({'error':str(e)},status=500)
