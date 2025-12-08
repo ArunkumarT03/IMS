@@ -21,10 +21,10 @@ class StudentSerializer(serializers.ModelSerializer):
             "gender",
             "phone",
             "email",
-            "cls",           # POST only
-            "sec",           # POST only
-            "class_name",    # GET only
-            "section_name"   # GET only
+            "cls",
+            "sec",
+            "class_name",
+            "section_name"
         ]
 
     def create(self, validated_data):
@@ -32,22 +32,14 @@ class StudentSerializer(serializers.ModelSerializer):
         if not request:
             raise serializers.ValidationError({"error": "Request context missing"})
 
+        # Password from request
         raw_password = request.data.get("password")
         if not raw_password:
             raise serializers.ValidationError({"password": "Password is required"})
 
+        # Extract fields
         cls_value = validated_data.pop("cls").strip()
         sec_value = validated_data.pop("sec").strip()
-
-        # Get/Create ClassRoom
-        classroom, _ = ClassRoom.objects.get_or_create(cls=cls_value)
-
-        # Get/Create Section
-        section, _ = Section.objects.get_or_create( 
-            cls=classroom,
-            sec=sec_value
-        )
-
         email = validated_data.get("email")
 
         # Create user
@@ -57,14 +49,18 @@ class StudentSerializer(serializers.ModelSerializer):
             role="student"
         )
 
-        # Create student
+        # Create classroom & section
+        classroom, _ = ClassRoom.objects.get_or_create(cls=cls_value)
+        section, _ = Section.objects.get_or_create(cls=classroom, sec=sec_value)
+
+        # Create ONLY ONCE
         student = Student.objects.create(
             user=user,
             section=section,
             **validated_data
         )
 
-        # Create Student record linked to the user
-        student = Student.objects.create(user=user, section=section, **validated_data)
+        return student
+
 
 
