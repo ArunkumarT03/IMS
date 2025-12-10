@@ -294,8 +294,7 @@ class AssignClassTeacherView(APIView):
                 "status": 1,
                 "message": "Assigned class teachers fetched successfully",
                 "data": serializer.data
-            })
-
+             })
     def post(self, request):
         serializer = AssignMultipleTeachersSerializer(data=request.data)
 
@@ -312,9 +311,7 @@ class AssignClassTeacherView(APIView):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
     def put(self, request, pk):
-        """
-        Update a single AssignClassTeacher instance by ID
-        """
+       
         try:
             instance = AssignClassTeacher.objects.get(pk=pk)
         except AssignClassTeacher.DoesNotExist:

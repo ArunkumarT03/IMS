@@ -245,32 +245,37 @@ class AssignMultipleTeachersSerializer(serializers.Serializer):
         if not assignments:
             raise serializers.ValidationError({"assignments": "No assignments provided."})
 
-        updated_instances = []
+    # Get the new values
+        teacher_name = assignments[0]['teacher']
+        role = assignments[0]['role']
 
-        for item in assignments:
-            teacher_name = item.get('teacher')
-            role = item.get('role')
-
-            try:
-                teacher = Instructor.objects.get(name__iexact=teacher_name)
-            except Instructor.DoesNotExist:
-                raise serializers.ValidationError({"teacher": f"Instructor '{teacher_name}' does not exist"})
-
-        obj, created = AssignClassTeacher.objects.update_or_create(
-            classroom=classroom,
-            section=section,
-            teacher=teacher,
-            defaults={"role": role}
-        )
-
-        updated_instances.append({
-            "teacher": teacher_name,
-            "role": role,
-            "status": "created" if created else "updated"
+    # Validate teacher exists
+        try:
+            teacher = Instructor.objects.get(name__iexact=teacher_name)
+        except Instructor.DoesNotExist:
+            raise serializers.ValidationError({
+                "teacher": f"Instructor '{teacher_name}' does not exist"
         })
 
+    # DELETE all previous assignments for this classroom + section EXCEPT current instance
+        AssignClassTeacher.objects.filter(
+            classroom=classroom,
+            section=section
+        ).exclude(id=instance.id).delete()
+
+    # UPDATE the current record
+        instance.classroom = classroom
+        instance.section = section
+        instance.teacher = teacher
+        instance.role = role
+        instance.save()
+
         return {
-            "classroom": classroom.id,
-            "section": section.id,
-            "assignments": updated_instances
+        "classroom": classroom.id,
+        "section": section.id,
+        "assignments": [{
+            "teacher": teacher.name,
+            "role": role,
+            "status": "updated"
+        }]
     }
