@@ -7,6 +7,7 @@ from Academics.models import *
 from Academics.serializers import *
 from rest_framework import status
 
+
 class CreateClassroomView(APIView):
     def get(self, request, pk=None):
         if pk:
@@ -273,6 +274,7 @@ class SubjectTeachersAPIView(APIView):
 
         
 # AssignClassTeacher POST view
+
 class AssignClassTeacherView(APIView):
     
     def get(self, request, pk=None):
@@ -295,6 +297,8 @@ class AssignClassTeacherView(APIView):
                 "message": "Assigned class teachers fetched successfully",
                 "data": serializer.data
              })
+
+
     def post(self, request):
         serializer = AssignMultipleTeachersSerializer(data=request.data)
 
@@ -325,4 +329,18 @@ class AssignClassTeacherView(APIView):
                 "message": "Class teacher assignment updated successfully",
                 "data": updated
             })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class GetRolesOnlyView(APIView):
+
+    def get(self, request):
+        queryset = AssignClassTeacher.objects.values('role').distinct()
+        serializer = RoleOnlySerializer(queryset, many=True)
+
+        return Response({
+            "status": 1,
+            "message": "Roles fetched successfully",
+            "data": serializer.data
+        })
+
+    

@@ -13,7 +13,7 @@ class ClassroomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ClassRoom
-        fields = ['id','cls', 'sections']
+        fields = ['id','cls','sections']
 
 # Serializer for input (POST request)
 class CreateClassroomSerializer(serializers.Serializer):
@@ -184,11 +184,11 @@ class TeacherAssignmentSerializer(serializers.Serializer):
 class AssignClassTeacherListSerializer(serializers.ModelSerializer):
     classroom = serializers.PrimaryKeyRelatedField(read_only=True)
     section = serializers.PrimaryKeyRelatedField(read_only=True)
-    teacher = serializers.CharField(source='teacher.name', read_only=True)
+    teacher = serializers.CharField(source='teacher.name',read_only=True)
 
     class Meta:
         model = AssignClassTeacher
-        fields = ['id', 'classroom', 'section', 'teacher', 'role']
+        fields = ['id', 'classroom', 'section', 'teacher','role']
 
 
 class AssignMultipleTeachersSerializer(serializers.Serializer):
@@ -196,6 +196,12 @@ class AssignMultipleTeachersSerializer(serializers.Serializer):
     section = serializers.PrimaryKeyRelatedField(queryset=Section.objects.all())
     assignments = TeacherAssignmentSerializer(many=True)
 
+    def validate(self, data):
+        roles = [a["role"]for a in data["assignments"]]
+        if len(roles) != len(set(roles)):
+            raise serializers.ValidationError("Each role must be unique for this class & section. ")
+        return data
+    
     def create(self, validated_data):
         classroom = validated_data["classroom"]
         section = validated_data["section"]
@@ -273,9 +279,16 @@ class AssignMultipleTeachersSerializer(serializers.Serializer):
         return {
         "classroom": classroom.id,
         "section": section.id,
-        "assignments": [{
+        "assignments":[{ 
             "teacher": teacher.name,
             "role": role,
             "status": "updated"
-        }]
-    }
+                        }]
+        }
+
+class RoleOnlySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssignClassTeacher
+        fields = ['role']
+    
+  

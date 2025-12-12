@@ -10,12 +10,7 @@ class SubjectSerializer(serializers.ModelSerializer):
 
 
 class InstructorSerializer(serializers.ModelSerializer):
-    subject_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Subject.objects.all(),
-        many=True,
-        write_only=True,
-        source="subjects"
-    )
+    subject_ids = serializers.PrimaryKeyRelatedField(queryset=Subject.objects.all(),many=True,write_only=True,source="subjects")
     subjects = SubjectSerializer(many=True, read_only=True)
     password = serializers.CharField(write_only=True)
     email = serializers.EmailField()   # <-- Now using Instructor.email
