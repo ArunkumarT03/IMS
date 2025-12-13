@@ -27,6 +27,31 @@ class StudentSerializer(serializers.ModelSerializer):
             "section_name"
         ]
 
+class StudentSerializer(serializers.ModelSerializer):
+    # For POST
+    cls = serializers.CharField(write_only=True)
+    sec = serializers.CharField(write_only=True)
+
+    # For GET
+    class_name = serializers.CharField(source="section.cls.cls", read_only=True)
+    section_name = serializers.CharField(source="section.sec", read_only=True)
+
+    class Meta:
+        model = Student
+        fields = [
+            "id",
+            "name",
+            "fathername",
+            "dob",
+            "gender",
+            "phone",
+            "email",
+            "cls",
+            "sec",
+            "class_name",
+            "section_name"
+        ]
+
     def create(self, validated_data):
         request = self.context.get("request")
         if not request:
@@ -47,7 +72,7 @@ class StudentSerializer(serializers.ModelSerializer):
             email=email,
             password=raw_password,
             role="student"
-        )
+            )
 
         # Create classroom & section
         classroom, _ = ClassRoom.objects.get_or_create(cls=cls_value)
@@ -61,6 +86,3 @@ class StudentSerializer(serializers.ModelSerializer):
         )
 
         return student
-
-
-

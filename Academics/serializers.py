@@ -13,7 +13,7 @@ class ClassroomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ClassRoom
-        fields = ['cls', 'sections']
+        fields = ['id','cls','sections']
 
 # Serializer for input (POST request)
 class CreateClassroomSerializer(serializers.Serializer):
@@ -30,6 +30,15 @@ class CreateClassroomSerializer(serializers.Serializer):
             Section.objects.get_or_create(cls=classroom, sec=s)
         
         return classroom
+    def update(self, instance, validated_data):
+        instance.cls = validated_data.get("cls", instance.cls)
+        instance.save()
+        new_sections = validated_data.get("sec", [])
+        Section.objects.filter(cls=instance).delete()
+        for s in new_sections:
+            Section.objects.get_or_create(cls=instance, sec=s)
+
+        return instance
 
 class SubjectSerializer(serializers.ModelSerializer):
     # Ensure 'type' only accepts valid choices
@@ -64,10 +73,6 @@ class CreateAssignSubjectSerializer(serializers.Serializer):
     classroom = serializers.PrimaryKeyRelatedField(queryset=ClassRoom.objects.all(), required=False)
     section = serializers.PrimaryKeyRelatedField(queryset=Section.objects.all(), required=False)
     assignments = SubjectTeacherPairSerializer(many=True)
-    class Meta:
-        model = AssignSubject
-        fields = ['id', 'classroom', 'section', 'subject', 'teacher']
-
     def create(self, validated_data):
         classroom = validated_data['classroom']
         section = validated_data['section']
@@ -97,7 +102,7 @@ class CreateAssignSubjectSerializer(serializers.Serializer):
                 )
 
             # Create or update assignment
-            assign_sub, created = AssignSubject.objects.get_or_create(
+            assign_sub = AssignSubject.objects.create(
                 classroom=classroom,
                 section=section,
                 subject=subject,
@@ -179,11 +184,11 @@ class TeacherAssignmentSerializer(serializers.Serializer):
 class AssignClassTeacherListSerializer(serializers.ModelSerializer):
     classroom = serializers.PrimaryKeyRelatedField(read_only=True)
     section = serializers.PrimaryKeyRelatedField(read_only=True)
-    teacher = serializers.CharField(source='teacher.name', read_only=True)
+    teacher = serializers.CharField(source='teacher.name',read_only=True)
 
     class Meta:
         model = AssignClassTeacher
-        fields = ['id', 'classroom', 'section', 'teacher', 'role']
+        fields = ['id', 'classroom', 'section', 'teacher','role']
 
 
 class AssignMultipleTeachersSerializer(serializers.Serializer):
@@ -191,6 +196,12 @@ class AssignMultipleTeachersSerializer(serializers.Serializer):
     section = serializers.PrimaryKeyRelatedField(queryset=Section.objects.all())
     assignments = TeacherAssignmentSerializer(many=True)
 
+    def validate(self, data):
+        roles = [a["role"]for a in data["assignments"]]
+        if len(roles) != len(set(roles)):
+            raise serializers.ValidationError("Each role must be unique for this class & section. ")
+        return data
+    
     def create(self, validated_data):
         classroom = validated_data["classroom"]
         section = validated_data["section"]
@@ -240,32 +251,44 @@ class AssignMultipleTeachersSerializer(serializers.Serializer):
         if not assignments:
             raise serializers.ValidationError({"assignments": "No assignments provided."})
 
-        updated_instances = []
+    # Get the new values
+        teacher_name = assignments[0]['teacher']
+        role = assignments[0]['role']
 
-        for item in assignments:
-            teacher_name = item.get('teacher')
-            role = item.get('role')
-
-            try:
-                teacher = Instructor.objects.get(name__iexact=teacher_name)
-            except Instructor.DoesNotExist:
-                raise serializers.ValidationError({"teacher": f"Instructor '{teacher_name}' does not exist"})
-
-        obj, created = AssignClassTeacher.objects.update_or_create(
-            classroom=classroom,
-            section=section,
-            teacher=teacher,
-            defaults={"role": role}
-        )
-
-        updated_instances.append({
-            "teacher": teacher_name,
-            "role": role,
-            "status": "created" if created else "updated"
+    # Validate teacher exists
+        try:
+            teacher = Instructor.objects.get(name__iexact=teacher_name)
+        except Instructor.DoesNotExist:
+            raise serializers.ValidationError({
+                "teacher": f"Instructor '{teacher_name}' does not exist"
         })
 
+    # DELETE all previous assignments for this classroom + section EXCEPT current instance
+        AssignClassTeacher.objects.filter(
+            classroom=classroom,
+            section=section
+        ).exclude(id=instance.id).delete()
+
+    # UPDATE the current record
+        instance.classroom = classroom
+        instance.section = section
+        instance.teacher = teacher
+        instance.role = role
+        instance.save()
+
         return {
-            "classroom": classroom.id,
-            "section": section.id,
-            "assignments": updated_instances
-    }
+        "classroom": classroom.id,
+        "section": section.id,
+        "assignments":[{ 
+            "teacher": teacher.name,
+            "role": role,
+            "status": "updated"
+                        }]
+        }
+
+class RoleOnlySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssignClassTeacher
+        fields = ['role']
+    
+  
