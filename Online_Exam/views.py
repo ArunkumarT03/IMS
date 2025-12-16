@@ -33,9 +33,7 @@ class ExamListCreateView(APIView):
         return Response(serializer.errors, status=400)
 
 
-# ---------------------------------------------------------------------
-# EXAM RETRIEVE + UPDATE + DELETE
-# ---------------------------------------------------------------------
+
 class ExamDetailView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -138,14 +136,17 @@ class QuestionListView(APIView):
 class QuestionDetailView(APIView):
 
     # GET single question
-    def get(self, request, pk):
+    def get(self,request, pk):
         try:
-            question = Question.objects.get(id=pk)
-        except Question.DoesNotExist:
-            return Response({"error": "Question not found"}, status=404)
+            try:
+                question = Question.objects.get(id=pk)
+            except Question.DoesNotExist:
+                return Response({"error": "Question not found"}, status=404)
 
-        serializer = QuestionSerializer(question)
-        return Response(serializer.data)
+            serializer = QuestionSerializer(question)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response ({"status":0,"error":str(e)},status=500)
 
     # PUT update question
     def put(self, request, pk):

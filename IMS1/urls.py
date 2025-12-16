@@ -30,6 +30,7 @@ urlpatterns = [
     path('',include('Academics.urls')),
     path('',include('instructor.urls')),
     path('',include('Online_Exam.urls')),
+    path('',include('Review_Exam.urls'))
     
     
 ]
