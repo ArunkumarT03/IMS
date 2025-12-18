@@ -241,19 +241,25 @@ class AssignSubjectView(APIView):
  
 class SubjectTeachersAPIView(APIView):
     def get(self, request, pk=None):
+
+        # Get subjects
         if pk:
             try:
                 subjects = [Subject.objects.get(pk=pk)]
             except Subject.DoesNotExist:
-                return Response({"error": "Subject not found"}, status=404)
+                return Response(
+                    {"status": 0, "message": "Subject not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
         else:
             subjects = Subject.objects.all()
 
         data = []
+
         for s in subjects:
             assignments = AssignSubject.objects.filter(subject=s)
 
-            teacher_map = {}   # ← store unique teachers by ID
+            teacher_map = {}  # unique teachers by ID
 
             for assign in assignments:
                 for t in assign.teacher.all():
@@ -265,13 +271,21 @@ class SubjectTeachersAPIView(APIView):
             data.append({
                 "id": s.id,
                 "subject": s.subject_name,
-                "teachers": list(teacher_map.values())  # ← unique list
+                "teachers": list(teacher_map.values())
             })
 
-        if pk and data:
-            return Response(data[0])
-        return Response(data)
+        # Single subject response
+        if pk:
+            return Response(
+                {"status": 1, "data": data[0]},
+                status=status.HTTP_200_OK
+            )
 
+        # All subjects response
+        return Response(
+            {"status": 1, "data": data},
+            status=status.HTTP_200_OK
+        )
         
 # AssignClassTeacher POST view
 
@@ -330,7 +344,6 @@ class AssignClassTeacherView(APIView):
                 "data": updated
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 class GetRolesOnlyView(APIView):
 
     def get(self, request):

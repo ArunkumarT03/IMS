@@ -95,20 +95,24 @@ class ExamQuestionListCreateView(APIView):
     # POST → Add question to exam
     def post(self, request, exam_id):
         try:
-            exam = Exam.objects.get(id=exam_id)
-        except Exam.DoesNotExist:
-            return Response({"error": "Exam not found"}, status=404)
+            try:
+                exam = Exam.objects.get(id=exam_id)
+            except Exam.DoesNotExist:
+                return Response({"error": "Exam not found"}, status=404)
 
-        serializer = QuestionSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(exam=exam)
-            return Response({
-                "status": 1,
-                "message": "Question created successfully",
-                "data": serializer.data
-            }, status=201)
+            serializer = QuestionSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(exam=exam)
+                return Response({
+                    "status": 1,
+                    "message": "Question created successfully",
+                    "data": serializer.data
+                }, status=201)
 
-        return Response(serializer.errors, status=400)
+            return Response(serializer.errors, status=400)
+        except Exception as e:
+            return Response({"status": 0, "error": str(e)}, status=500)
+
 
 
 # ---------------------------------------------------------------------
@@ -124,13 +128,16 @@ class QuestionListView(APIView):
 
     # POST a new question
     def post(self, request):
-        serializer = QuestionSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({
-            "message": "Question created successfully",
-            "data": serializer.data
-        }, status=201)
+        try:
+            serializer = QuestionSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response({
+                "message": "Question created successfully",
+                "data": serializer.data
+            }, status=201)
+        except Exception as e:
+            return Response({"status": 0, "error": str(e)}, status=500)
 
 
 class QuestionDetailView(APIView):

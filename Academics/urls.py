@@ -11,7 +11,7 @@ urlpatterns=[
     path('assign-subject/<int:pk>/', AssignSubjectView.as_view(), name='update_assign_subject'), 
     path('assign-class-teacher/', AssignClassTeacherView.as_view(),name='assign_class_teacher'),
     path('assign-class-teacher/<int:pk>/',AssignClassTeacherView.as_view(),name="update_class_teacher"),
-    path('subjects/', SubjectTeachersAPIView.as_view(), name='subjects'),
-    path('subjects/<int:pk>/', SubjectTeachersAPIView.as_view(), name='subject-detail'),
+    path('subject-teacher/', SubjectTeachersAPIView.as_view(), name='subjects'),
+    path('subject-teacher/<int:pk>/', SubjectTeachersAPIView.as_view(), name='subject-detail'),
     path('roles/',GetRolesOnlyView.as_view())
 ]

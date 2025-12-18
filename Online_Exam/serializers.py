@@ -1,8 +1,11 @@
 from rest_framework import serializers
 from .models import Exam, Question, Option
-from Academics.models import ClassRoom, Section
+from Academics.models import ClassRoom,Section
 
-# Option Serializer
+
+
+
+
 class OptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Option
@@ -12,10 +15,11 @@ class OptionSerializer(serializers.ModelSerializer):
 # Question Serializer (nested options)
 class QuestionSerializer(serializers.ModelSerializer):
     options = OptionSerializer(many=True, required=False)
+    image = serializers.ImageField(required=False,allow_null=True)
 
     class Meta:
         model = Question
-        fields = ['id', 'text', 'question_type', 'marks', 'options']
+        fields = ['id', 'text', 'question_type', 'marks', 'options','image']
 
     def create(self, validated_data):
         options_data = validated_data.pop('options', [])

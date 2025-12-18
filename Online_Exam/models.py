@@ -30,6 +30,7 @@ class Question(models.Model):
 
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='questions')
     text = models.TextField()
+    image = models.ImageField(upload_to='question_images/',null=True,blank=True)
     question_type = models.CharField(max_length=10, choices=QUESTION_TYPE_CHOICES, default='MCQ')
     marks = models.FloatField(default=1.0)
 

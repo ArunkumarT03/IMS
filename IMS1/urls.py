@@ -18,6 +18,20 @@ from django.contrib import admin
 from django.urls import path,include
 from .settings import check_mysql_connection
 from rest_framework_simplejwt.views import  TokenRefreshView
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.conf import settings
+from django.conf.urls.static import static
+
+
+
+class HomeAPIView(APIView):
+    def get(self,request):
+        return Response({
+            "status": 1,
+            "message": "API run successfully"
+        }, status=status.HTTP_200_OK)
 
 
 urlpatterns = [
@@ -30,7 +44,11 @@ urlpatterns = [
     path('',include('Academics.urls')),
     path('',include('instructor.urls')),
     path('',include('Online_Exam.urls')),
-    path('',include('Review_Exam.urls'))
+    path('',include('Review_Exam.urls')),
+    path('',HomeAPIView.as_view())
     
     
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
