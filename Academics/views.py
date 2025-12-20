@@ -183,28 +183,16 @@ class AssignSubjectView(APIView):
     def post(self, request):
         try:
             serializer = CreateAssignSubjectSerializer(data=request.data)
-        
+
             if serializer.is_valid():
-                assigned = serializer.save()
-
-                response = []
-                for a in assigned:
-                    response.append({
-                        "id": a.id,
-                        "classroom": a.classroom.id,
-                        "section": a.section.id,
-                        "subject": a.subject.subject_name,
-                        "teacher": [t.name for t in a.teacher.all()]
-                })
-
+                data = serializer.save()
                 return Response({
                     "status": 1,
                     "message": "Assignments saved successfully!",
-                    "data": response
+                    "data": data
                 }, status=status.HTTP_201_CREATED)
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
         except Exception as e:
             return Response({"status": 0, "error": str(e)}, status=500)
 
@@ -215,145 +203,190 @@ class AssignSubjectView(APIView):
             try:
                 instance = AssignSubject.objects.get(pk=pk)
             except AssignSubject.DoesNotExist:
-                return Response({"status": 0, "message": "Assignment not found"}, status=404)
+                return Response(
+                {"status": 0, "message": "Assignment not found"},
+                status=404
+                )
 
             serializer = CreateAssignSubjectSerializer(instance, data=request.data)
 
             if serializer.is_valid():
-                updated = serializer.save()
-
+                data = serializer.save()
                 return Response({
                     "status": 1,
                     "message": "Assignment updated successfully!",
-                    "data": {
-                        "id": updated.id,
-                        "classroom": updated.classroom.id,
-                        "section": updated.section.id,
-                        "subject": updated.subject.subject_name,
-                        "teacher": [t.name for t in updated.teacher.all()]
-                }
-            })
+                    "data": data
+                })
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
         except Exception as e:
             return Response({"status": 0, "error": str(e)}, status=500)
+        
+    def delete(self,request,pk):
+        try:
+            try:
+                instance=AssignSubject.objects.get(pk=pk)
+            except AssignSubject.DoesNotExist:
+                return Response({
+                    "status":0,
+                    "message":"Assignment not found"},status=400)
+            instance.delete()
+            return Response({
+                "status":1,
+                "message":"Assignment delete successfully"},status=200)
+        except Exception as e:
+            return Response({"status":0,"error":str(e)},status=500)   
  
 class SubjectTeachersAPIView(APIView):
     def get(self, request, pk=None):
 
         # Get subjects
-        if pk:
-            try:
-                subjects = [Subject.objects.get(pk=pk)]
-            except Subject.DoesNotExist:
-                return Response(
-                    {"status": 0, "message": "Subject not found"},
-                    status=status.HTTP_404_NOT_FOUND
+        try:
+            if pk:
+                try:
+                    subjects = [Subject.objects.get(pk=pk)]
+                except Subject.DoesNotExist:
+                    return Response(
+                        {"status": 0, "message": "Subject not found"},
+                        status=status.HTTP_404_NOT_FOUND
                 )
-        else:
-            subjects = Subject.objects.all()
+            else:
+                subjects = Subject.objects.all()
 
-        data = []
+            data = []
 
-        for s in subjects:
-            assignments = AssignSubject.objects.filter(subject=s)
+            for s in subjects:
+                assignments = AssignSubject.objects.filter(subject=s)
 
-            teacher_map = {}  # unique teachers by ID
+                teacher_map = {}  # unique teachers by ID
 
-            for assign in assignments:
-                for t in assign.teacher.all():
-                    teacher_map[t.id] = {
-                        "id": t.id,
-                        "name": t.name
-                    }
+                for assign in assignments:
+                    for t in assign.teacher.all():
+                        teacher_map[t.id] = {
+                            "id": t.id,
+                            "name": t.name
+                     }
 
-            data.append({
-                "id": s.id,
-                "subject": s.subject_name,
-                "teachers": list(teacher_map.values())
-            })
+                data.append({
+                    "id": s.id,
+                    "subject": s.subject_name,
+                    "teachers": list(teacher_map.values())
+                })
 
         # Single subject response
-        if pk:
-            return Response(
-                {"status": 1, "data": data[0]},
-                status=status.HTTP_200_OK
+            if pk:
+                return Response(
+                    {"status": 1, "data": data[0]},
+                    status=status.HTTP_200_OK
             )
 
-        # All subjects response
-        return Response(
-            {"status": 1, "data": data},
-            status=status.HTTP_200_OK
-        )
-        
+        # All subjec    ts response
+            return Response(
+                {"status": 1, "data": data},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response({"status": 0, "error": str(e)}, status=500)
 # AssignClassTeacher POST view
 
 class AssignClassTeacherView(APIView):
     
     def get(self, request, pk=None):
-        if pk:
-            try:
-                assignment = AssignClassTeacher.objects.get(pk=pk)
-                serializer = AssignClassTeacherListSerializer(assignment)
+        
+        try:
+            if pk:
+                try:
+                    assignment = AssignClassTeacher.objects.get(pk=pk)
+                    serializer = AssignClassTeacherListSerializer(assignment)
+                    return Response({
+                        "status": 1,
+                        "message": "Class teacher assignment fetched successfully",
+                        "data": serializer.data
+                    })
+                except AssignClassTeacher.DoesNotExist:
+                    return Response({"status": 0, "message": "Assignment not found"}, status=404)
+            else:
+                queryset = AssignClassTeacher.objects.all()
+                serializer = AssignClassTeacherListSerializer(queryset, many=True)
                 return Response({
                     "status": 1,
-                    "message": "Class teacher assignment fetched successfully",
+                    "message": "Assigned class teachers fetched successfully",
                     "data": serializer.data
                 })
-            except AssignClassTeacher.DoesNotExist:
-                return Response({"status": 0, "message": "Assignment not found"}, status=404)
-        else:
-            queryset = AssignClassTeacher.objects.all()
-            serializer = AssignClassTeacherListSerializer(queryset, many=True)
-            return Response({
-                "status": 1,
-                "message": "Assigned class teachers fetched successfully",
-                "data": serializer.data
-             })
+        except Exception as e:
+            return Response({"status":0,"error":str(e)},status=500)    
 
 
     def post(self, request):
-        serializer = AssignMultipleTeachersSerializer(data=request.data)
+        try:
+            serializer = AssignMultipleTeachersSerializer(data=request.data)
 
-        if serializer.is_valid():
-            result = serializer.save()
+            if serializer.is_valid():
+                result = serializer.save()
+                return Response({
+                    "status": 1,
+                    "message": "Teachers assigned successfully",
+                    "data": result
+                }, status=status.HTTP_201_CREATED)
+
             return Response({
-                "status": 1,
-                "message": "Teachers assigned successfully",
-                "data": result
-            }, status=status.HTTP_201_CREATED)
-
-        return Response({
-            "status": 0,
-            "errors": serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+                "status": 0,
+                "errors": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"status": 0, "error": str(e)}, status=500)
     def put(self, request, pk):
        
         try:
-            instance = AssignClassTeacher.objects.get(pk=pk)
-        except AssignClassTeacher.DoesNotExist:
-            return Response({"status": 0, "message": "Assignment not found"}, status=404)
+            try:
+                instance = AssignClassTeacher.objects.get(pk=pk)
+            except AssignClassTeacher.DoesNotExist:
+                return Response({"status": 0, "message": "Assignment not found"}, status=404)
 
-        serializer = AssignMultipleTeachersSerializer(instance, data=request.data)
-        if serializer.is_valid():
-            updated = serializer.save()
+            serializer = AssignMultipleTeachersSerializer(instance, data=request.data)
+            if serializer.is_valid():
+                updated = serializer.save()
+                return Response({
+                    "status": 1,
+                    "message": "Class teacher assignment updated successfully",
+                    "data": updated
+                })
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"status": 0, "error": str(e)}, status=500)
+        
+    def delete(self,request,pk):
+        try:
+            try:
+                instance=AssignClassTeacher.objects.get(pk=pk)
+            except AssignClassTeacher.DoesNotExist:
+                return Response({
+                    "status":0,
+                    "message":"Assignment not found"},status=400)
+            instance.delete()
             return Response({
-                "status": 1,
-                "message": "Class teacher assignment updated successfully",
-                "data": updated
-            })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                "status":1,
+                "message":"Assignment delete successfully"},status=200)
+        except Exception as e:
+            return Response ({"status":0,"error":str(e)},status=500)
+        
+            
+            
+                    
+        
 class GetRolesOnlyView(APIView):
 
     def get(self, request):
-        queryset = AssignClassTeacher.objects.values('role').distinct()
-        serializer = RoleOnlySerializer(queryset, many=True)
+        try:
+            queryset = AssignClassTeacher.objects.values('role').distinct()
+            serializer = RoleOnlySerializer(queryset, many=True)
 
-        return Response({
-            "status": 1,
-            "message": "Roles fetched successfully",
-            "data": serializer.data
-        })
+            return Response({
+                "status": 1,
+                "message": "Roles fetched successfully",
+                "data": serializer.data
+            })
+        except Exception as e:
+            return Response({"status":0,"error":str(e)},status=500)
 
     

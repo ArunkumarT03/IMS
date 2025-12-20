@@ -152,17 +152,20 @@ class InstructorSubjectsAPIView(APIView):
 
     def put(self, request, instructor_id):
         try:
-            instructor = Instructor.objects.get(pk=instructor_id)
-        except Instructor.DoesNotExist:
-            return Response({"error": "Instructor not found"}, status=404)
+            try:
+                instructor = Instructor.objects.get(pk=instructor_id)
+            except Instructor.DoesNotExist:
+                return Response({"error": "Instructor not found"}, status=404)
 
-        serializer = InstructorSubjectsUpdateSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.update(instructor, serializer.validated_data)
-            result = InstructorSubjectsSerializer(instructor)
-            return Response({
-                "status": 1,
-                "message": "Instructor subjects updated successfully",
-                "data": result.data
-            })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer = InstructorSubjectsUpdateSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.update(instructor, serializer.validated_data)
+                result = InstructorSubjectsSerializer(instructor)
+                return Response({
+                    "status": 1,
+                    "message": "Instructor subjects updated successfully",
+                    "data": result.data
+                })
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"status":0,"error":str(e)},status=500)

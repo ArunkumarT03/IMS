@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'instructor',
     'Online_Exam',
     'Review_Exam',
+    'Dashboard',
 ]
 
 DATABASES = {

@@ -45,7 +45,9 @@ urlpatterns = [
     path('',include('instructor.urls')),
     path('',include('Online_Exam.urls')),
     path('',include('Review_Exam.urls')),
+    path('',include('Dashboard.urls')),
     path('',HomeAPIView.as_view())
+    
     
     
 ]
