@@ -16,15 +16,6 @@ class UserDeleteView(APIView):
                 status=404
             )
 
-    def delete(self, request, pk):
-        try:
-            user = User.objects.get(id=pk)
-        except User.DoesNotExist:
-            return Response(
-                {"status": 0, "message": "User not found"},
-                status=404
-            )
-
         user.delete()
         return Response({'message':'user deleted'})
     
