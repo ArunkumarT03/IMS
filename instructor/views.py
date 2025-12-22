@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate, login
 from django.utils.timezone import localtime
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
+from instructor.models import *
 
 class InstructorCreateView(APIView):
 
