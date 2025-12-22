@@ -15,22 +15,28 @@ class ExamListCreateView(APIView):
 
     # GET → List all exams
     def get(self, request):
-        exams = Exam.objects.all()
-        serializer = ExamSerializer(exams, many=True)
-        return Response(serializer.data, status=200)
-
+        try:
+            exams = Exam.objects.all()
+            serializer = ExamSerializer(exams, many=True)
+            return Response(serializer.data, status=200)
+        except Exception as e:
+            return Response({"status": 0, "error": str(e)}, status=500)
     # POST → Create exam
     def post(self, request):
-        serializer = ExamSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({
-                "status": 1,
-                "message": "Exam created successfully",
-                "data": serializer.data
-            }, status=201)
+        try:
+            serializer = ExamSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    "status": 1,
+                    "message": "Exam created successfully",
+                    "data": serializer.data
+                }, status=201)
 
-        return Response(serializer.errors, status=400)
+            return Response(serializer.errors, status=400)
+        except Exception as e:
+            return Response({"status": 0, "error": str(e)}, status=500)
+ 
 
 
 
@@ -83,41 +89,38 @@ class ExamDetailView(APIView):
 # ---------------------------------------------------------------------
 # QUESTION LIST + CREATE for specific exam
 # ---------------------------------------------------------------------
-class ExamQuestionListCreateView(APIView):
+class ExamByClassroomSectionView(APIView):
     permission_classes = [permissions.AllowAny]
-
-    # GET → List questions for an exam
-    def get(self, request, exam_id):
-        questions = Question.objects.filter(exam_id=exam_id)
-        serializer = QuestionSerializer(questions, many=True)
-        return Response(serializer.data, status=200)
-
-    # POST → Add question to exam
-    def post(self, request, exam_id):
+    def get(self, request, classroom_id, section_id):
         try:
-            try:
-                exam = Exam.objects.get(id=exam_id)
-            except Exam.DoesNotExist:
-                return Response({"error": "Exam not found"}, status=404)
+            exams = Exam.objects.filter(
+                classroom_id=classroom_id,
+                sections__id=section_id
+            ).distinct()
 
-            serializer = QuestionSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save(exam=exam)
-                return Response({
+            if not exams.exists():
+                return Response(
+                    {
+                        "status": 0,
+                        "message": "No exams found"
+                    },
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            serializer = ExamSerializer(exams, many=True, context={"section_id": section_id})
+
+            return Response(
+                {
                     "status": 1,
-                    "message": "Question created successfully",
                     "data": serializer.data
-                }, status=201)
+                },
+                status=status.HTTP_200_OK
+            )
 
-            return Response(serializer.errors, status=400)
         except Exception as e:
-            return Response({"status": 0, "error": str(e)}, status=500)
+             return Response({"status": 0, "error": str(e)}, status=500)
 
-
-
-# ---------------------------------------------------------------------
-# QUESTION RETRIEVE + UPDATE + DELETE
-# ---------------------------------------------------------------------
+    
 class QuestionListView(APIView):
 
     # GET all questions
@@ -180,3 +183,20 @@ class QuestionDetailView(APIView):
 
         question.delete()
         return Response({"message": "Question deleted"})
+
+class ExamQuestionsView(APIView):
+
+    def get(self, request, exam_id):
+        # Validate exam exists
+        try:
+            Exam.objects.get(id=exam_id)
+        except Exam.DoesNotExist:
+            return Response(
+                {"detail": "Exam not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        questions = Question.objects.filter(exam_id=exam_id).prefetch_related('options')
+        serializer = QuestionSerializer(questions, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)    

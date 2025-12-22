@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ExamListCreateView,ExamDetailView,ExamQuestionListCreateView,QuestionDetailView,QuestionListView  
+from .views import ExamListCreateView,ExamDetailView,ExamByClassroomSectionView,QuestionDetailView,QuestionListView,ExamQuestionsView  
 
 
 urlpatterns = [
@@ -14,12 +14,14 @@ urlpatterns = [
     # PUT → update exam  
     # DELETE → delete exam
     path('exams/<int:pk>/', ExamDetailView.as_view(), name='exam-detail'),
+    path('questions/<int:exam_id>/', ExamQuestionsView.as_view()),
 
 
     
     # GET → all questions for exam  
     # POST → create question in exam
-    path('exams/<int:exam_id>/questions/', ExamQuestionListCreateView.as_view(),  name='exam-question-list-create'),
+   path('exams/<int:classroom_id>/<int:section_id>/',ExamByClassroomSectionView.as_view()),
+
       
 
     #GET - ALL QUESTIONS
