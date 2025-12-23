@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ExamListCreateView,ExamDetailView,ExamByClassroomSectionView,QuestionDetailView,QuestionListView,ExamQuestionsView  
+from .views import *  
 
 
 urlpatterns = [
@@ -20,7 +20,7 @@ urlpatterns = [
     
     # GET → all questions for exam  
     # POST → create question in exam
-   path('exams/<int:classroom_id>/<int:section_id>/',ExamByClassroomSectionView.as_view()),
+   path('exams/<int:student_id>/<int:classroom_id>/<int:section_id>/',ExamByStudentClassSectionView.as_view()),
 
       
 

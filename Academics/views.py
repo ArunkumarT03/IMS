@@ -72,6 +72,17 @@ class CreateClassroomView(APIView):
             return Response({"status": 0, "errors": serializer.errors}, status=400)
         except Exception as e:
             return Response({"status": 0, "error": str(e)}, status=500)
+        
+    def delete(self,request,pk):
+        try:
+            try:
+                classroom=ClassRoom.objects.get(pk=pk)
+                classroom.delete()
+                return Response({"status":1,"message":"classroom delete successfully"},status=status.HTTP_200_OK)
+            except ClassRoom.DoesNotExist:
+                return Response ({"status":0,"message":"classroom not found"},status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"status":0,"error":str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)        
  
   
 
@@ -133,24 +144,19 @@ class SubjectView(APIView):
 
     def delete(self, request, pk):
         try:
-            subject = Subject.objects.get(pk=pk)
-            subject.delete()
-            return Response({
-                "status": 1,
-                "message": "Subject deleted successfully"
-            }, status=200)
+            try:
+                subject = Subject.objects.get(pk=pk)
+                subject.delete()
+                return Response({
+                    "status": 1,
+                    "message": "Subject deleted successfully"
+                }, status=200)
 
-        except Subject.DoesNotExist:
-            return Response({
-                "status": 0,
-                "message": "Subject not found"
-            }, status=404)
+            except Subject.DoesNotExist:
+                return Response({"status": 0,"message": "Subject not found"}, status=404)
 
         except Exception as e:
-            return Response({
-                "status": 0,
-            "   error": str(e)
-            }, status=500)
+            return Response({"status": 0,"error": str(e)}, status=500)
    
 
 

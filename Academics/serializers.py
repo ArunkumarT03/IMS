@@ -247,31 +247,37 @@ class AssignMultipleTeachersSerializer(serializers.Serializer):
             "assignments": saved_assignments
         }
     def update(self, instance, validated_data):
-        assignments = validated_data["assignments"]
-
-        if len(assignments) != 1:
-            raise serializers.ValidationError(
-                "PUT supports updating only one teacher assignment"
+        classroom_obj = ClassRoom.objects.get(
+            cls__iexact=validated_data["classroom"]
+        )
+        section_obj = Section.objects.get(
+            cls=classroom_obj,
+            sec__iexact=validated_data["section"]
         )
 
-        item = assignments[0]
-        role = item["role"]
+        item = validated_data["assignments"][0]
 
-        instance.role = role
+        teacher_obj = Instructor.objects.get(
+            name__iexact=item["teacher"]
+        )
+
+        instance.classroom = classroom_obj
+        instance.section = section_obj
+        instance.teacher = teacher_obj
+        instance.role = item["role"]
         instance.save()
 
         return {
-            "classroom": instance.classroom.cls,
-            "section": instance.section.sec,
+            "classroom": classroom_obj.cls,
+            "section": section_obj.sec,
             "assignments": [
                 {
-                    "teacher": instance.teacher.name,
+                    "teacher": teacher_obj.name,
                     "role": instance.role,
                     "status": "updated"
                 }
             ]
         }
-
 
 
 class RoleOnlySerializer(serializers.ModelSerializer):
