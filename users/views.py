@@ -17,7 +17,7 @@ class UserDeleteView(APIView):
             )
 
         user.delete()
-        return Response(
-            {"status": 1, "message": "User deleted successfully"},
-            status=200
-        )
+        return Response({'message':'user deleted'})
+    
+        
+        
