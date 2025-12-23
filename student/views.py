@@ -67,39 +67,81 @@ class StudentsView(APIView):
     
 class GlobalLoginView(APIView):
     def post(self, request):
-        email = request.data.get("email")
-        password = request.data.get("password")
         try:
+            email = request.data.get("email")
+            password = request.data.get("password")
+
             if not email or not password:
-                return Response({"status": 0, "message": "Email and Password required"}, status=400)
+                return Response(
+                    {"status": 0, "message": "Email and password required"},
+                    status=400
+                )
 
             user = authenticate(request, email=email, password=password)
 
             if not user:
-                return Response({"status": 0, "message": "Invalid email or password"}, status=400)
-            
-            if user.role == "student":
-                if not hasattr(user, "student_profile"):
-                    return Response({"status": 0, "message": "Student profile missing"}, status=400)
+                return Response(
+                    {"status": 0, "message": "Invalid email or password"},
+                    status=400
+                )
 
-                if user.student_profile.status != "approved":
-                    return Response({"status": 0, "message": "Student not approved yet"}, status=403)
-
-        
-            login(request, user)  
-
-            # generate tokens
-            refresh = RefreshToken.for_user(user)
-
-            return Response({
+            response_data = {
                 "status": 1,
                 "message": f"{user.role} login successful",
-                "id":user.id,
                 "role": user.role,
                 "email": user.email,
-                "last_login": localtime(user.last_login).strftime("%Y-%m-%d %H:%M:%S"),  # return updated last_login
+            }
+
+            # 🎓 STUDENT
+            if user.role == "student":
+                if not hasattr(user, "student_profile"):
+                    return Response(
+                        {"status": 0, "message": "Student profile missing"},
+                        status=400
+                    )
+
+                if user.student_profile.status != "approved":
+                    return Response(
+                        {"status": 0, "message": "Student not approved yet"},
+                        status=403
+                    )
+
+                response_data["student_id"] = user.student_profile.id
+
+            # 👨‍🏫 INSTRUCTOR
+            elif user.role == "instructor":
+                if not hasattr(user, "instructor_profile"):
+                    return Response(
+                        {"status": 0, "message": "Instructor profile missing"},
+                        status=400
+                    )
+
+                response_data["instructor_id"] = user.instructor_profile.id
+
+            # 👑 ADMIN
+            elif user.role == "admin":
+                if not hasattr(user, "admin_profile"):
+                    return Response(
+                        {"status": 0, "message": "Admin profile missing"},
+                        status=400
+                    )
+
+                response_data["admin_id"] = user.admin_profile.id
+
+            # login + JWT
+            login(request, user)
+            refresh = RefreshToken.for_user(user)
+
+            response_data.update({
+                "last_login": localtime(user.last_login).strftime("%Y-%m-%d %H:%M:%S"),
                 "access_token": str(refresh.access_token),
                 "refresh_token": str(refresh),
-            }, status=200)
+            })
+
+            return Response(response_data, status=200)
+
         except Exception as e:
-            return Response({'error':str(e)})
+            return Response(
+                {"status": 0, "error": str(e)},
+                status=500
+            )
