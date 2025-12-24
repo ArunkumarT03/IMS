@@ -106,7 +106,16 @@ class GlobalLoginView(APIView):
                         status=403
                     )
 
-                response_data["student_id"] = user.student_profile.id
+                student=user.student_profile
+                classroom_id = student.section.cls_id
+
+                section_id = student.section_id
+
+                response_data.update({
+                        "student_id": student.id,
+                        "classroom_id": classroom_id,
+                        "section_id": section_id,
+                    })
 
             # 👨‍🏫 INSTRUCTOR
             elif user.role == "instructor":

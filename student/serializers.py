@@ -2,30 +2,7 @@ from rest_framework import serializers
 from users.models import*
 from student.models import*
 
-class StudentSerializer(serializers.ModelSerializer):
-    # For POST
-    cls = serializers.CharField(write_only=True)
-    sec = serializers.CharField(write_only=True)
 
-    # For GET
-    class_name = serializers.CharField(source="section.cls.cls", read_only=True)
-    section_name = serializers.CharField(source="section.sec", read_only=True)
-
-    class Meta:
-        model = Student
-        fields = [
-            "id",
-            "name",
-            "fathername",
-            "dob",
-            "gender",
-            "phone",
-            "email",
-            "cls",           # POST only
-            "sec",           # POST only
-            "class_name",    # GET only
-            "section_name"   # GET only
-        ]
 
 class StudentSerializer(serializers.ModelSerializer):
     # For POST
