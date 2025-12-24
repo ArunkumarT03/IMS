@@ -91,7 +91,7 @@ class ExamSerializer(serializers.ModelSerializer):
 
         if section_names is not None:
             section_names = list(set(section_names))
-            sections = Section.objects.filter(sec__in=section_names)
+            sections = Section.objects.filter( cls=instance.classroom,sec__in=section_names)
             instance.sections.set(sections)
 
         if questions_data:
