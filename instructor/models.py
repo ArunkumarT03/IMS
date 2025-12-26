@@ -11,6 +11,6 @@ class Instructor(models.Model):
     experience = models.CharField(max_length=50)
     subjects = models.ManyToManyField(Subject, related_name="instructors")
     is_active = models.BooleanField(default=True)  # Optional
-
+    
     def __str__(self):
         return self.name

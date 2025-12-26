@@ -26,7 +26,8 @@ class StudentSerializer(serializers.ModelSerializer):
             "cls",
             "sec",
             "class_name",
-            "section_name"
+            "section_name",
+            "status"
         ]
 
     def create(self, validated_data):

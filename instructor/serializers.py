@@ -27,6 +27,7 @@ class InstructorSerializer(serializers.ModelSerializer):
             "subjects",
             "subject_ids",
             "password",
+            
         ]
 
     def create(self, validated_data):

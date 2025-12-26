@@ -12,40 +12,60 @@ from django.utils import timezone
 
 
 
+from django.db.models import Sum
+
 class ExamReviewView(APIView):
-    
+
     def get(self, request, exam_id, student_id):
         try:
-            attempt = StudentExamRecord.objects.filter(exam_id=exam_id,student_id=student_id).last()
-            exam = Exam.objects.get(id=exam_id)
+            exam = get_object_or_404(Exam, id=exam_id)
             now = timezone.now()
 
-            if attempt:
-                status = 'completed'
-            elif now > exam.end_time:
-                status = 'expired'
+            attempt = StudentExamRecord.objects.filter(
+                exam_id=exam_id,
+                student_id=student_id
+            ).order_by('-submitted_at').first()
+
+            # 🔹 Determine exam status
+            if now > exam.end_time:
+                exam_status = 'expired'
+            elif attempt:
+                exam_status = 'completed'
             else:
-                status = 'not_started_yet'
+                exam_status = 'not_started_yet'
 
-            data = ExamReviewSerializer(attempt).data if attempt else {}
+            total_score = 0
+            review_data = {}
 
-            data.update({
-                "status": status,
-                "can_attend": status == 'not_started_yet',
-                "can_view_answers": status == 'completed'
+            # 🔹 If student has attempted, calculate marks
+            if attempt:
+                total_score = StudentExamRecord.objects.filter(
+                    student_id=student_id,
+                    exam_id=exam_id,
+                    submitted_at=attempt.submitted_at
+                ).aggregate(total=Sum('mark_obtained'))['total'] or 0
+
+                review_data = ExamReviewSerializer(attempt).data
+
+            # 🔹 Final response data
+            review_data.update({
+                "status": exam_status,
+                "can_attend": False,                 # expired / completed → false
+                "can_view_answers": now>exam.end_time,
+                "total_score": total_score
             })
 
             return Response({
                 "status": 1,
                 "message": "Exam review loaded successfully",
-                "data": data
+                "data": review_data
             })
 
-        except Exam.DoesNotExist:
-            return Response({"status": 0, "message": "Exam not found"})
         except Exception as e:
-            return Response({"error": str(e)}, status=500)
-  
+            return Response(
+                {"status": 0, "error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class SubmitExamView(APIView):
 
