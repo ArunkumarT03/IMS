@@ -5,6 +5,8 @@ from student.serializers import *
 from django.contrib.auth import authenticate,login
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.timezone import localtime
+from instructor.models import *
+from rest_framework.permissions import IsAuthenticated 
 # Create your views here.
 class StudentSignupView(APIView):
     def get(self,request):
@@ -152,5 +154,82 @@ class GlobalLoginView(APIView):
         except Exception as e:
             return Response(
                 {"status": 0, "error": str(e)},
+                status=500
+            )
+class InstructorStudentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            user = request.user
+
+            # ---------------------------------
+            # If instructor → use own profile
+            # ---------------------------------
+            if Instructor.objects.filter(user=user).exists():
+                instructor = Instructor.objects.get(user=user)
+
+            # ---------------------------------
+            # If admin → instructor_id REQUIRED
+            # ---------------------------------
+            elif user.is_staff or user.is_superuser:
+                instructor_id = request.query_params.get("instructor_id")
+
+                if not instructor_id:
+                    return Response(
+                        {
+                            "status": 0,
+                            "error": "instructor_id is required for admin"
+                        },
+                        status=400
+                    )
+
+                instructor = Instructor.objects.get(id=instructor_id)
+
+            else:
+                return Response(
+                    {
+                        "status": 0,
+                        "error": "You do not have permission"
+                    },
+                    status=403
+                )
+
+            # ---------------------------------
+            # Get instructor section students
+            # ---------------------------------
+            section_ids = AssignClassTeacher.objects.filter(
+                teacher=instructor
+            ).values_list("section_id", flat=True)
+
+            students = Student.objects.filter(
+                section_id__in=section_ids
+            )
+
+            serializer = StudentSerializer(students, many=True)
+
+            return Response(
+                {
+                    "status": 1,
+                    "data": serializer.data
+                },
+                status=200
+            )
+
+        except Instructor.DoesNotExist:
+            return Response(
+                {
+                    "status": 0,
+                    "error": "Instructor not found"
+                },
+                status=404
+            )
+
+        except Exception as e:
+            return Response(
+                {
+                    "status": 0,
+                    "error": str(e)
+                },
                 status=500
             )

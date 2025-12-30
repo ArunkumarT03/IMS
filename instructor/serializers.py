@@ -10,7 +10,12 @@ class SubjectSerializer(serializers.ModelSerializer):
 
 
 class InstructorSerializer(serializers.ModelSerializer):
-    subject_ids = serializers.PrimaryKeyRelatedField(queryset=Subject.objects.all(),many=True,write_only=True,source="subjects")
+    subject_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Subject.objects.all(),
+        many=True,
+        write_only=True,
+        source="subjects"
+    )
     subjects = SubjectSerializer(many=True, read_only=True)
     password = serializers.CharField(write_only=True)
     email = serializers.EmailField()   # <-- Now using Instructor.email
@@ -27,7 +32,6 @@ class InstructorSerializer(serializers.ModelSerializer):
             "subjects",
             "subject_ids",
             "password",
-            
         ]
 
     def create(self, validated_data):
@@ -59,20 +63,25 @@ class InstructorSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         subjects = validated_data.pop("subjects", None)
         password = validated_data.pop("password", None)
-        email = validated_data.get("email", None)
+        email = validated_data.pop("email", None)
 
-    # Update normal fields
+        # ✅ Update Instructor fields
         for attr, value in validated_data.items():
-            if attr == "email" and value is None:
-                continue  # skip updating email if missing
             setattr(instance, attr, value)
 
-    # Update password if user exists
-        if password and hasattr(instance, "user") and instance.user:
+        # ✅ Update email in BOTH Instructor & User
+        if email:
+            instance.email = email
+            if instance.user:
+                instance.user.email = email
+                instance.user.save()
+
+        # ✅ Update password
+        if password and instance.user:
             instance.user.set_password(password)
             instance.user.save()
 
-    # Update ManyToMany subjects
+        # ✅ Update subjects
         if subjects is not None:
             instance.subjects.set(subjects)
 

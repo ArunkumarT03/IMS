@@ -55,17 +55,22 @@ class InstructorCreateView(APIView):
         except Exception as e:
             return Response({"status": 0, "error": str(e)}, status=500)
 
+class InstructorUpdateView(APIView):
     def put(self, request, id):
-        try:
+        try:    
             try:
                 instructor = Instructor.objects.get(id=id)
             except Instructor.DoesNotExist:
-                return Response({
-                    "status": 0,
-                    "message": "Instructor not found"
-                }, status=404)
+                return Response(
+                    {"status": 0, "message": "Instructor not found"},
+                    status=404
+                )
 
-            serializer = InstructorSerializer(instructor, data=request.data, partial=True)
+            serializer = InstructorSerializer(
+                instructor,
+                data=request.data,
+                partial=True
+            )
 
             if serializer.is_valid():
                 serializer.save()
@@ -76,10 +81,8 @@ class InstructorCreateView(APIView):
                 }, status=200)
 
             return Response({"status": 0, "errors": serializer.errors}, status=400)
-
         except Exception as e:
-            return Response({"status": 0, "error": str(e)}, status=500)
-
+            return Response({"status":0,"error":str(e)},status=500)
 
    
         
