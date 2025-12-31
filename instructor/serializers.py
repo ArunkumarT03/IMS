@@ -17,7 +17,7 @@ class InstructorSerializer(serializers.ModelSerializer):
         source="subjects"
     )
     subjects = SubjectSerializer(many=True, read_only=True)
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True,required=False,allow_blank=True)
     email = serializers.EmailField()   # <-- Now using Instructor.email
 
     class Meta:
