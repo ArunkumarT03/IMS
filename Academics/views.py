@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from Academics.models import *
 from Academics.serializers import *
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 
 
 class CreateClassroomView(APIView):
@@ -379,7 +380,6 @@ class AssignClassTeacherView(APIView):
             
             
                     
-        
 class GetRolesOnlyView(APIView):
 
     def get(self, request):
@@ -394,5 +394,103 @@ class GetRolesOnlyView(APIView):
             })
         except Exception as e:
             return Response({"status":0,"error":str(e)},status=500)
+        
+class InstructorAssignSubjectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            user = request.user
+
+            # -------------------------------
+            # Allow ONLY instructor
+            # -------------------------------
+            if not Instructor.objects.filter(user=user).exists():
+                return Response(
+                    {
+                        "status": 0,
+                        "error": "Only instructor can access this"
+                    },
+                    status=403
+                )
+
+            instructor = Instructor.objects.get(user=user)
+
+            # -------------------------------
+            # Get assigned subjects
+            # -------------------------------
+            assignments = AssignSubject.objects.filter(
+                teacher=instructor
+            )
+
+            serializer = AssignSubjectListSerializer(assignments, many=True)
+
+            return Response(
+                {
+                    "status": 1,
+                    "data": serializer.data
+                },
+                status=200
+            )
+
+        except Exception as e:
+            return Response(
+                {
+                    "status": 0,
+                    "error": str(e)
+                },
+                status=500
+            )
+        
+class InstructorAssignClassTeacherView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            user = request.user
+
+            # -------------------------------
+            # Allow ONLY instructor
+            # -------------------------------
+            if not Instructor.objects.filter(user=user).exists():
+                return Response(
+                    {
+                        "status": 0,
+                        "error": "Only instructor can access this"
+                    },
+                    status=403
+                )
+
+            instructor = Instructor.objects.get(user=user)
+
+            # -------------------------------
+            # Get assigned class teacher data
+            # -------------------------------
+            assignments = AssignClassTeacher.objects.filter(
+                teacher=instructor
+            )
+
+            serializer = AssignClassTeacherListSerializer(assignments, many=True)
+
+            return Response(
+                {
+                    "status": 1,
+                    "data": serializer.data
+                },
+                status=200
+            )
+
+        except Exception as e:
+            return Response(
+                {
+                    "status": 0,
+                    "error": str(e)
+                },
+                status=500
+            )
+
+
+        
+
 
     

@@ -13,5 +13,8 @@ urlpatterns=[
     path('assign-class-teacher/<int:pk>/',AssignClassTeacherView.as_view(),name="update_class_teacher"),
     path('subject-teacher/', SubjectTeachersAPIView.as_view(), name='subjects'),
     path('subject-teacher/<int:pk>/', SubjectTeachersAPIView.as_view(), name='subject-detail'),
-    path('roles/',GetRolesOnlyView.as_view())
+    path('roles/',GetRolesOnlyView.as_view()),
+    path("instructor/assign-subjects/", InstructorAssignSubjectView.as_view()),
+    path("instructor/assign-class-teacher/", InstructorAssignClassTeacherView.as_view()),
+
 ]
